@@ -4,6 +4,8 @@ export type OperationIdFactory = (
   version?: string
 ) => string;
 
+export type VersionExtractorFactory = (version: string) => string[];
+
 export interface SwaggerDocumentOptions {
   /**
    * List of modules to include in the specification
@@ -31,4 +33,9 @@ export interface SwaggerDocumentOptions {
    * @default () => controllerKey_methodKey
    */
   operationIdFactory?: OperationIdFactory;
+
+  /**
+   * Custom versionExtractorFactory that will be used to generate the version order to be used
+   */
+  versionExtractorFactory?: VersionExtractorFactory;
 }

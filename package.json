@@ -7,6 +7,7 @@
   "repository": "https://github.com/nestjs/swagger",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "postbuild": "tsc index.ts --declaration true",
     "format": "prettier \"lib/**/*.ts\" --write",
     "lint": "eslint 'lib/**/*.ts' --fix",
     "prepublish:next": "npm run build",
@@ -18,6 +19,7 @@
     "test:e2e": "jest --config e2e/jest-e2e.json",
     "prerelease": "npm run build",
     "release": "release-it",
+    "prepare": "npm run build",
     "---manual-tests---": "",
     "start": "nest start",
     "start:dev": "nest start --watch",

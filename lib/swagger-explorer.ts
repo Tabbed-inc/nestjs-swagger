@@ -326,6 +326,7 @@ export class SwaggerExplorer {
           method: RequestMethod[requestMethod].toLowerCase(),
           path: fullPath === '' ? '/' : fullPath,
           operationId: this.getOperationId(instance, method, pathVersion),
+          version: methodVersion || controllerVersion,
           ...apiExtension
         };
       })

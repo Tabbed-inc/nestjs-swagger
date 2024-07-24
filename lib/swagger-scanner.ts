@@ -32,6 +32,7 @@ export class SwaggerScanner {
 
   public scanApplication(
     app: INestApplication,
+    config: Omit<OpenAPIObject, 'paths'>,
     options: SwaggerDocumentOptions
   ): Omit<OpenAPIObject, 'openapi' | 'info'> {
     const {
@@ -98,7 +99,11 @@ export class SwaggerScanner {
     this.addExtraModels(schemas, extraModels);
 
     return {
-      ...this.transformer.normalizePaths(flatten(denormalizedPaths)),
+      ...this.transformer.normalizePaths(
+        flatten(denormalizedPaths),
+        config,
+        options
+      ),
       components: {
         schemas: schemas as Record<string, SchemaObject | ReferenceObject>
       }

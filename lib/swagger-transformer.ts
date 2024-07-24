@@ -1,17 +1,55 @@
 import { INestApplication } from '@nestjs/common';
-import { filter, groupBy, keyBy, mapValues, omit } from 'lodash';
-import { OpenAPIObject } from './interfaces';
+import { filter, find, groupBy, keyBy, mapValues, omit } from 'lodash';
+import { OpenAPIObject, SwaggerDocumentOptions } from './interfaces';
 import { ModuleRoute } from './interfaces/module-route.interface';
 
 export class SwaggerTransformer {
   public normalizePaths(
-    denormalizedDoc: (Partial<OpenAPIObject> & Record<'root', any>)[]
+    denormalizedDoc: (Partial<OpenAPIObject> & Record<'root', any>)[],
+    config: Omit<OpenAPIObject, 'paths'>,
+    options?: SwaggerDocumentOptions
   ): Record<'paths', OpenAPIObject['paths']> {
+    const { version } = config.info;
+    const { versionExtractorFactory } = options ?? {};
     const roots = filter(denormalizedDoc, (r) => r.root);
     const groupedByPath = groupBy(
       roots,
       ({ root }: Record<'root', any>) => root.path
     );
+
+    if (versionExtractorFactory) {
+      const paths = mapValues(groupedByPath, (routes) => {
+        const groupedByMethod = groupBy(
+          routes,
+          ({ root }: Record<'root', any>) => root.method
+        );
+        const keyByMethod = Object.fromEntries(
+          Object.entries(groupedByMethod).map(([method, routes]) => {
+            const extractedVersionList = versionExtractorFactory(version);
+            for (const version of extractedVersionList) {
+              const found = find(
+                routes,
+                ({ root }: Record<'root', any>) => root.version === version
+              );
+              if (found) {
+                return [method, found];
+              }
+            }
+            return [method, routes[0]];
+          })
+        );
+        return mapValues(keyByMethod, (route: any) => {
+          return {
+            ...omit(route.root, ['method', 'path', 'version']),
+            ...omit(route, 'root')
+          };
+        });
+      });
+      return {
+        paths
+      };
+    }
+
     const paths = mapValues(groupedByPath, (routes) => {
       const keyByMethod = keyBy(
         routes,
