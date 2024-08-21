@@ -26,7 +26,8 @@ import {
   ApiParam,
   ApiProduces,
   ApiProperty,
-  ApiQuery
+  ApiQuery,
+  ApiSchema
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
 import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
@@ -92,7 +93,7 @@ describe('SwaggerExplorer', () => {
 
       @ApiProperty({
         enum: () => LettersEnum,
-        enumName: 'LettersEnum',
+        enumName: 'LettersEnum'
       })
       enumFunction: LettersEnum;
     }
@@ -979,7 +980,11 @@ describe('SwaggerExplorer', () => {
       })
       @ApiQuery({ name: 'order', enum: QueryEnum })
       @ApiQuery({ name: 'page', enum: ['d', 'e', 'f'] })
-      find(@Param('objectId') objectId: ParamEnum, @Query('order') order: QueryEnum, @Query('page') page: 'd' | 'e' | 'f'): Promise<Foo[]> {
+      find(
+        @Param('objectId') objectId: ParamEnum,
+        @Query('order') order: QueryEnum,
+        @Query('page') page: 'd' | 'e' | 'f'
+      ): Promise<Foo[]> {
         return Promise.resolve([]);
       }
     }
@@ -999,7 +1004,11 @@ describe('SwaggerExplorer', () => {
         enumName: 'QueryEnum',
         isArray: true
       })
-      findBar(@Param('objectId') objectId: ParamEnum, @Query('order') order: QueryEnum, @Query('page') page: QueryEnum[]): Promise<Foo> {
+      findBar(
+        @Param('objectId') objectId: ParamEnum,
+        @Query('order') order: QueryEnum,
+        @Query('page') page: QueryEnum[]
+      ): Promise<Foo> {
         return Promise.resolve(null);
       }
     }
@@ -1989,6 +1998,139 @@ describe('SwaggerExplorer', () => {
           }
         }
       ]);
+    });
+  });
+  describe('when custom schema names are used', () => {
+    @ApiSchema({
+      name: 'Foo'
+    })
+    class FooDto {}
+
+    @ApiSchema({
+      name: 'CreateFoo'
+    })
+    class CreateFooDto {}
+
+    @Controller('')
+    class FooController {
+      @Post('foos')
+      @ApiBody({ type: CreateFooDto })
+      @ApiOperation({ summary: 'Create foo' })
+      @ApiCreatedResponse({
+        type: FooDto,
+        description: 'Newly created Foo object'
+      })
+      create(@Body() createFoo: CreateFooDto): Promise<FooDto> {
+        return Promise.resolve({});
+      }
+
+      @Get('foos/:objectId')
+      @ApiParam({ name: 'objectId', type: 'string' })
+      @ApiQuery({ name: 'page', type: 'string' })
+      @ApiOperation({ summary: 'List all Foos' })
+      @ApiOkResponse({ type: [FooDto] })
+      @ApiDefaultResponse({ type: [FooDto] })
+      find(
+        @Param('objectId') objectId: string,
+        @Query('page') q: string
+      ): Promise<FooDto[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    it('sees two controller operations and their responses', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path'
+      );
+
+      expect(routes.length).toEqual(2);
+
+      // POST
+      expect(routes[0].root.operationId).toEqual('FooController_create');
+      expect(routes[0].root.method).toEqual('post');
+      expect(routes[0].root.path).toEqual('/path/foos');
+      expect(routes[0].root.summary).toEqual('Create foo');
+      expect(routes[0].root.parameters.length).toEqual(0);
+      expect(routes[0].root.requestBody).toEqual({
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              $ref: '#/components/schemas/CreateFoo'
+            }
+          }
+        }
+      });
+
+      expect(
+        (routes[0].responses['201'] as ResponseObject).description
+      ).toEqual('Newly created Foo object');
+      expect(
+        (routes[0].responses['201'] as ResponseObject).content[
+          'application/json'
+        ]
+      ).toEqual({
+        schema: {
+          $ref: '#/components/schemas/Foo'
+        }
+      });
+
+      // GET
+      expect(routes[1].root.operationId).toEqual('FooController_find');
+      expect(routes[1].root.method).toEqual('get');
+      expect(routes[1].root.path).toEqual('/path/foos/{objectId}');
+      expect(routes[1].root.summary).toEqual('List all Foos');
+      expect(routes[1].root.parameters.length).toEqual(2);
+      expect(routes[1].root.parameters).toEqual([
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'string'
+          }
+        },
+        {
+          in: 'query',
+          name: 'page',
+          required: true,
+          schema: {
+            type: 'string'
+          }
+        }
+      ]);
+      expect(
+        (routes[1].responses['200'] as ResponseObject).description
+      ).toEqual('');
+      expect(
+        (routes[1].responses['200'] as ResponseObject).content[
+          'application/json'
+        ]
+      ).toEqual({
+        schema: {
+          type: 'array',
+          items: {
+            $ref: '#/components/schemas/Foo'
+          }
+        }
+      });
+      expect(
+        (routes[1].responses.default as ResponseObject).content[
+          'application/json'
+        ]
+      ).toEqual({
+        schema: {
+          type: 'array',
+          items: {
+            $ref: '#/components/schemas/Foo'
+          }
+        }
+      });
     });
   });
 });
