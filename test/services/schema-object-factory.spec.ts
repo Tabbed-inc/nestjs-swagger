@@ -1,4 +1,4 @@
-import { ApiExtension, ApiProperty } from '../../lib/decorators';
+import { ApiExtension, ApiProperty, ApiSchema } from '../../lib/decorators';
 import {
   BaseParameterObject,
   SchemasObject
@@ -45,7 +45,7 @@ describe('SchemaObjectFactory', () => {
     enum HairColour {
       Brown = 'Brown',
       Blond = 'Blond',
-      Ginger = 'Ginger',
+      Ginger = 'Ginger'
     }
 
     class CreatePersonDto {
@@ -71,7 +71,11 @@ describe('SchemaObjectFactory', () => {
       @ApiProperty({ enum: () => HairColour, enumName: 'HairColour' })
       hairColour: HairColour;
 
-      @ApiProperty({ enum: () => ['Pizza', 'Burger', 'Salad'], enumName: 'Food', isArray: true })
+      @ApiProperty({
+        enum: () => ['Pizza', 'Burger', 'Salad'],
+        enumName: 'Food',
+        isArray: true
+      })
       favouriteFoods: string[];
     }
 
@@ -123,17 +127,24 @@ describe('SchemaObjectFactory', () => {
               $ref: '#/components/schemas/Ranking'
             }
           },
-          'favouriteFoods': {
-            'items': {
-              '$ref': '#/components/schemas/Food'
+          favouriteFoods: {
+            items: {
+              $ref: '#/components/schemas/Food'
             },
-            'type': 'array'
+            type: 'array'
           },
-          'hairColour': {
-            '$ref': '#/components/schemas/HairColour'
+          hairColour: {
+            $ref: '#/components/schemas/HairColour'
           }
         },
-        required: ['role', 'roles', 'groups', 'rankings', 'hairColour', 'favouriteFoods']
+        required: [
+          'role',
+          'roles',
+          'groups',
+          'rankings',
+          'hairColour',
+          'favouriteFoods'
+        ]
       });
       schemaObjectFactory.exploreModelSchema(CreatePersonDto, schemas);
 
@@ -395,6 +406,34 @@ describe('SchemaObjectFactory', () => {
         enum: ['a', 'b', 'c'],
         type: 'string'
       });
+    });
+
+    it('should use schema name instead of class name', () => {
+      @ApiSchema({
+        name: 'CreateUser'
+      })
+      class CreateUserDto {}
+
+      const schemas = [];
+
+      schemaObjectFactory.exploreModelSchema(CreateUserDto, schemas);
+
+      expect(Object.keys(schemas[0])[0]).toEqual('CreateUser');
+    });
+
+    it('should not use schema name of base class', () => {
+      @ApiSchema({
+        name: 'CreateUser'
+      })
+      class CreateUserDto {}
+
+      class UpdateUserDto extends CreateUserDto {}
+
+      const schemas = [];
+
+      schemaObjectFactory.exploreModelSchema(UpdateUserDto, schemas);
+
+      expect(Object.keys(schemas[0])[0]).toEqual('UpdateUserDto');
     });
   });
 });
