@@ -351,7 +351,8 @@ export class SchemaObjectFactory {
       type: metadata.isArray ? 'array' : 'string'
     };
 
-    const refHost = metadata.isArray ? { items: { $ref } } : { $ref };
+    const wrappedRef = metadata.nullable ? { allOf: [{ $ref }] } : { $ref };
+    const refHost = metadata.isArray ? { items: wrappedRef } : wrappedRef;
     const paramObject = { ..._schemaObject, ...refHost };
     const pathsToOmit = ['enum', 'enumName', ...additionalParams];
 
