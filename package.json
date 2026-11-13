@@ -29,7 +29,7 @@
     "@microsoft/tsdoc": "^0.15.0",
     "@nestjs/mapped-types": "2.0.5",
     "js-yaml": "4.1.0",
-    "lodash": "4.17.21",
+    "lodash": "4.18.1",
     "path-to-regexp": "3.2.0",
     "swagger-ui-dist": "5.17.14"
   },
@@ -95,5 +95,8 @@
       "pre-commit": "lint-staged",
       "commit-msg": "commitlint -c .commitlintrc.json -E HUSKY_GIT_PARAMS"
     }
+  },
+  "overrides": {
+    "lodash": "$lodash"
   }
 }
